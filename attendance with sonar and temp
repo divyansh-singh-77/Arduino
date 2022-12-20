@@ -1,0 +1,121 @@
+#define echoPin 2 // attach pin D2 Arduino to pin Echo of HC-SR04
+#define trigPin 3 //attach pin D3 Arduino to pin Trig of HC-SR04
+#include <Wire.h>
+#include <Adafruit_MLX90614.h>
+Adafruit_MLX90614 mlx = Adafruit_MLX90614();
+
+// defines variables
+long duration; // variable for the duration of sound wave travel
+int door_height=100; //height of the door
+int detection_range=75; //the sensor counts anything thats in this range 
+int distance; // variable for the distance measurement
+int number = 0; //for no. of people
+int height = 0; // Secret UwU
+int thermo_LED=10; //for the yellow LED which glows when temp is being recorded -
+int temp=0; //temp of the person 
+int sum=0; //sum of 5 temp readings 
+int avg=0; //avg temp of the person 
+int x; //loop variable 
+int green=8; //green LED
+int red=5; //red LED
+int buzzer=13; //buzzer 
+int normal_temp=90; //maximum normal body temp
+int correction_factor=10; //correction factor for temperature
+int prev_temp;
+int prev_no;
+
+void setup() {
+  pinMode(trigPin, OUTPUT); // Sets the trigPin as an OUTPUT
+  pinMode(echoPin, INPUT); // Sets the echoPin as an INPUT
+  pinMode(red, OUTPUT);
+  pinMode(green, OUTPUT);
+  pinMode(thermo_LED, OUTPUT);
+  Serial.begin(9600); // // Serial Communication is starting with 9600 of baudrate speed
+  Serial.println("Attendance counter"); // print some text in Serial Monitor
+  Serial.println("with Arduino UNO R3");
+  mlx.begin();
+}
+void loop() {
+  // Clears the trigPin condition
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  // Sets the trigPin HIGH (ACTIVE) for 2 microseconds
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  // Reads the echoPin, returns the sound wave travel time in microseconds
+  duration = pulseIn(echoPin, HIGH);
+  // Calculating the distance
+  distance = duration * 0.034 / 2; // Speed of sound wave divided by 2 (go and back)
+  // Displays the distance on the Serial Monitor
+  if (distance < detection_range && height > door_height)
+  {
+    number++;
+  }
+
+  if(distance>999)
+  {
+    distance=120;
+  }
+  //Serial.print("Distance :  ");
+  //Serial.print(distance);
+  //Serial.print("cm");
+  Serial.print("\t \t Number of attendees: ");
+  Serial.print(number);
+  if (distance < detection_range && height > door_height)
+  {
+   //digitalWrite(buzzer, HIGH); 
+   delay(500);
+   //digitalWrite(buzzer, LOW);
+   delay(500);
+   sum=0;
+   avg=0;
+   for(x=1;x<=5;x++)
+   {
+   digitalWrite(thermo_LED, HIGH)
+   
+   temp=mlx.readObjectTempF();
+   delay(100);
+   digitalWrite(thermo_LED, LOW);
+   delay(100);
+   sum=sum+temp;
+   }
+  }
+  avg= (sum+correction_factor)/5;
+  Serial.print("\t \t \t \t Body Temperature :");
+  Serial.print(avg);
+  Serial.println("°F");
+  if(avg>=normal_temp)
+  {
+  digitalWrite(red, HIGH);
+  digitalWrite(green, LOW);
+    if(avg!=prev_temp)
+   {
+   for(x=1;x<=5;x++)
+    {
+    digitalWrite(buzzer, HIGH);
+    delay(100);
+    digitalWrite(buzzer, LOW);
+    delay(100);
+    } 
+   }
+  if(avg==prev_temp&&number!=prev_no)
+   {
+   for(x=1;x<=5;x++)
+    {
+    digitalWrite(buzzer, HIGH);
+    delay(100);
+    digitalWrite(buzzer, LOW);
+    delay(100);
+    } 
+   } 
+  }
+  else
+  {
+  digitalWrite(green, HIGH);  
+  digitalWrite(red, LOW); 
+  }
+  height = distance;
+  prev_temp=avg;
+  prev_no=number;
+}
